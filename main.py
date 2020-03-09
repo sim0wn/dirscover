@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-
+# Imports
 from argparse import ArgumentParser, FileType, HelpFormatter
 from sys import argv, exit, stdout
 from requests import get, post, put, delete, head, options, codes, exceptions
 from time import sleep, strftime, gmtime
 
+# Override "help" message
 class CapitalisedHelpFormatter(HelpFormatter):
     def add_usage(self, usage, actions, groups, prefix=None):
         if prefix is None:
             prefix = '\033[1;36m❰\033[1;33m!\033[1;36m❱ \033[1;97mUsage\033[0;0m: '
         return super(CapitalisedHelpFormatter, self).add_usage(usage, actions, groups, prefix)
 
+# Parse arguments    
 argparse = ArgumentParser(prog="Dirscover", usage="{} <url> <wordlist>.".format(argv[0]),
         description="Tool to enumerate website directories",
         formatter_class=CapitalisedHelpFormatter)
@@ -25,12 +27,17 @@ argparse.add_argument("--data", help="POST request data", type=dict, dest="data"
 argparse.add_argument("--cookies", help="Request cookies", type=dict, dest="cookies")
 args = argparse.parse_args()
 
+# Variables
 HTTP_METHODS = [ 'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS' ]
+wordlist = args.wordlist.read().split()
+index = list()
 
+# Check if informed method is valid
 if not args.method in HTTP_METHODS:
     print('\033[1;36m❰\033[38:5:9m!\033[1;36m❱ \033[1;97mError\033[0;0m: invalid method specified (`{}`).'.format(args.method))
     exit(1)
 
+# Generate valid "requests" user-agent    
 def customAgent(agent):
     if (agent != "random"):
         return { "User-Agent": agent }
@@ -41,10 +48,8 @@ def customAgent(agent):
         except:
             print('\033[1;36m❰\033[38:5:9m!\033[1;36m❱ \033[1;97mError\033[0;0m: couldn\'t find user-agent wordlist (`./wordlists/user-agent.txt`).')
             exit(1)
-
-wordlist = args.wordlist.read().split()
-index = list()
-
+            
+# Print formatted output            
 def printStats(request, directory):
     template = """
      \r «˹=========================( \033[38:5:29mDirscover \033[38:5:15m)=========================˺»
@@ -78,6 +83,7 @@ def printStats(request, directory):
     stdout.write(u'\033[' + str(length + len(index)) + 'F')
     stdout.flush()
 
+# Enumerate
 for directory in wordlist:
     path = '{}/{}'.format(args.url, directory)
     try:
@@ -88,8 +94,4 @@ for directory in wordlist:
     except KeyboardInterrupt:
         stdout.write('\033[{}B\r\033[1;36m❰\033[38:5:9m!\033[1;36m❱ \033[1;97mError\033[0;0m: execution interrupted by user (`<CTRL+C>`).\n'.format(14+len(index)))
         exit(1)
-
     printStats(request, directory)
-
-    if request.status_code == codes.ok:
-        print("\t» {} (Code: {})".format(args.url.strip() + path.strip(), request.status_code))
